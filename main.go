@@ -1,50 +1,47 @@
 package main
 
 import (
-	"database/sql"
 	"fmt"
-
-	"github.com/PhilipFelipe/go-intensivo-jul/internal/infra/database"
-	"github.com/PhilipFelipe/go-intensivo-jul/internal/usecase"
-	_ "github.com/mattn/go-sqlite3"
+	"time"
 )
 
-type Car struct {
-	Model string
-	Color string
+func process() {
+	for i := 0; i < 10; i++ {
+		fmt.Println(i)
+		time.Sleep(time.Second)
+	}
 }
 
-// metodo
-func (c Car) Start() {
-	println(c.Model + " starting...")
-}
-
-func (c *Car) ChangeColor(color string) {
-	// Quando NÃO tem asterisco duplica o valor de c.color na memória - cópia do color original
-	c.Color = color
-	println("New color:", c.Color)
-}
-
-// funcao
-func soma(x, y int) int {
-	return x + y
-}
-
+// T1
 func main() {
-	db, err := sql.Open("sqlite3", "db.sqlite3")
-	if err != nil {
-		panic(err)
+
+	canal := make(chan int)
+
+	// T2
+	go func() {
+		for i := 0; i < 10; i++ {
+			canal <- i // envia dados para o canal
+			fmt.Println("Jogou no canal:", i)
+		}
+	}()
+	// T3
+	go func() {
+		for i := 0; i < 10; i++ {
+			canal <- i // envia dados para o canal
+			fmt.Println("Jogou no canal:", i)
+		}
+	}()
+
+	// T4
+	go worker(canal, 1)
+	go worker(canal, 2)
+	go worker(canal, 3)
+	worker(canal, 4)
+}
+
+func worker(canal chan int, workerID int) {
+	for {
+		fmt.Println("Recebeu do canal:", <-canal, "no worker:", workerID)
+		time.Sleep(time.Second)
 	}
-	orderRepository := database.NewOrderRepository(db)
-	uc := usecase.NewCalculateFinalPrice(orderRepository)
-	input := usecase.OrderInput{
-		ID:    "1234",
-		Price: 10.0,
-		Tax:   1.0,
-	}
-	output, err := uc.Execute(input)
-	if err != nil {
-		panic(err)
-	}
-	fmt.Println(output)
 }
